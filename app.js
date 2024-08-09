@@ -82,7 +82,7 @@ const searchGoogle = async (query) => {
     try {
       await page.goto('https://www.google.com');
   
-      await page.type('input[name="q"]', query);
+      await page.type('input', query);
       await page.keyboard.press('Enter');
   
       await page.waitForNavigation();

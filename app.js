@@ -119,6 +119,7 @@ async function createZip() {
         archive.on('error', (err) => reject(err));
         archive.on('finish', () => {
             console.log('Zip file created successfully.');
+            console.log('search_results.zip file path:', path.join(__dirname, 'public', 'search_results.zip'));
             resolve(output);
         });
 
@@ -130,6 +131,7 @@ async function createZip() {
         // Add logging for file creation
         console.log('Creating results.json file...');
         fs.writeFileSync(path.join(__dirname, 'public', 'results.json'), 'Sample results');
+        console.log('results.json file path:', path.join(__dirname, 'public', 'results.json'));
     });
 }
   

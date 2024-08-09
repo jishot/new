@@ -111,20 +111,20 @@ const searchGoogle = async (query) => {
     }
   };
   
-  async function createZip() {
+ async function createZip() {
     return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream('./search_results.zip');
-      const archive = archiver('zip', { zlib: { level: 9 } });
-  
-      archive.on('error', (err) => reject(err));
-      archive.on('finish', () => resolve(output));
-  
-      archive.pipe(output);
-      archive.glob('search_results.png');
-      archive.glob('results.json');
-      archive.finalize();
+        const output = fs.createWriteStream(path.join(__dirname, 'public', 'search_results.zip'));
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        archive.on('error', (err) => reject(err));
+        archive.on('finish', () => resolve(output));
+
+        archive.pipe(output);
+        archive.glob('search_results.png');
+        archive.glob('results.json');
+        archive.finalize();
     });
-  }
+}
   
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

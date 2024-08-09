@@ -113,6 +113,22 @@ const searchGoogle = async (query) => {
   
 async function createZip() {
     return new Promise((resolve, reject) => {
+        // Check if results.json file exists
+        const resultsJsonPath = path.join(__dirname, 'public', 'results.json'); // Update the path to include the 'public' directory
+        if (!fs.existsSync(resultsJsonPath)) {
+            console.log('results.json file does not exist in the expected directory.');
+            reject(new Error('results.json file not found'));
+            return;
+        }
+
+        // Check if search_results.png file exists
+        const searchResultsPath = path.join(__dirname, 'public', 'search_results.png');
+        if (!fs.existsSync(searchResultsPath)) {
+            console.log('search_results.png file does not exist in the expected directory.');
+            reject(new Error('search_results.png file not found'));
+            return;
+        }
+
         const output = fs.createWriteStream(path.join(__dirname, 'public', 'search_results.zip'));
         const archive = archiver('zip', { zlib: { level: 9 } });
 
@@ -127,14 +143,8 @@ async function createZip() {
         archive.glob('search_results.png');
         archive.glob('results.json');
         archive.finalize();
-
-        // Add logging for file creation
-        console.log('Creating results.json file...');
-        fs.writeFileSync(path.join(__dirname, 'public', 'results.json'), 'Sample results');
-        console.log('results.json file path:', path.join(__dirname, 'public', 'results.json'));
     });
 }
-  
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });

@@ -49,7 +49,6 @@ app.get('/search', async (req, res) => {
     const { zip, resultsJson } = await searchGoogle(query);
 
     const zipStream = fs.createReadStream(path.join(__dirname, 'search_results.zip'));
-    const resultsJsonStream = fs.createReadStream(path.join(__dirname, 'results.json'));
 
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename=search_results.zip');
@@ -67,7 +66,7 @@ app.get('/search', async (req, res) => {
 
     archive.pipe(res);
     archive.append(zipStream, { name: 'search_results.png' });
-    archive.append(resultsJsonStream, { name: 'results.json' });
+    archive.file(path.join(__dirname, 'results.json'), { name: 'results.json' });
     archive.finalize();
   } catch (error) {
     console.error(error);
@@ -76,63 +75,63 @@ app.get('/search', async (req, res) => {
 });
 
 const searchGoogle = async (query) => {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
   
-    try {
-      await page.goto('https://www.google.com');
-  
-      await page.type('input', query);
-      await page.keyboard.press('Enter');
-  
-      await page.waitForNavigation();
-  
-      const searchResults = await page.$$eval('div.g', elements => elements.map(element => {
-        const linkElement = element.querySelector('a');
-        const descriptionElement = element.querySelector('div.VwiC3b > div');
-        return {
-          link: linkElement ? linkElement.href : null,
-          description: descriptionElement ? descriptionElement.textContent.trim() : null
-        };
-      }));
-  
-      await page.screenshot({ path: 'search_results.png', fullPage: true });
-  
-      await browser.close();
-  
+  try {
+    await page.goto('https://www.google.com');
+    
+    await page.type('input', query);
+    await page.keyboard.press('Enter');
+    
+    await page.waitForNavigation();
+    
+    const searchResults = await page.$$eval('div.g', elements => elements.map(element => {
+      const linkElement = element.querySelector('a');
+      const descriptionElement = element.querySelector('div.VwiC3b > div');
       return {
-        zip: await createZip(),
-        resultsJson: JSON.stringify(searchResults)
+        link: linkElement ? linkElement.href : null,
+        description: descriptionElement ? descriptionElement.textContent.trim() : null
       };
-    } catch (error) {
-      console.error(error);
-      await browser.close();
-      throw error;
-    }
-  };
+    });
+    
+    await page.screenshot({ path: 'search_results.png', fullPage: true });
+    
+    await browser.close();
+    
+    return {
+      zip: await createZip(),
+      resultsJson: JSON.stringify(searchResults)
+    };
+  } catch (error) {
+    console.error(error);
+    await browser.close();
+    throw error;
+  }
+};
   
 async function createZip() {
-    return new Promise((resolve, reject) => {
-        const output = fs.createWriteStream(path.join(__dirname, 'public', 'search_results.zip'));
-        const archive = archiver('zip', { zlib: { level: 9 } });
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(path.join(__dirname, 'search_results.zip'));
+    const archive = archiver('zip', { zlib: { level: 9 } });
 
-        archive.on('error', (err) => reject(err));
-        archive.on('finish', () => {
-            console.log('Zip file created successfully.');
-            resolve(output);
-        });
-
-        archive.pipe(output);
-        archive.glob('search_results.png');
-        archive.glob('results.json');
-        archive.finalize();
-
-        // Add logging for file creation
-        console.log('Creating results.json file...');
-        fs.writeFileSync(path.join(__dirname, 'public', 'results.json'), 'Sample results');
+    archive.on('error', (err) => reject(err));
+    archive.on('finish', () => {
+      console.log('Zip file created successfully.');
+      resolve(output);
     });
+
+    archive.pipe(output);
+    archive.glob('search_results.png');
+    archive.file(path.join(__dirname, 'results.json'), { name: 'results.json' });
+    archive.finalize();
+
+    // Add logging for file creation
+    console.log('Creating results.json file...');
+    fs.writeFileSync(path.join(__dirname, 'results.json'), 'Sample results');
+  });
 }
   
-  app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});

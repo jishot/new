@@ -1,13 +1,21 @@
 {
-  "name": "your-project-name",
+  "name": "google-search-api",
   "version": "1.0.0",
-  "description": "Your project description",
+  "description": "A simple API for searching Google",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
   },
   "dependencies": {
     "express": "^4.17.1",
-    "puppeteer": "^9.1.1"
+    "puppeteer": "^10.4.0",
+    "archiver": "^5.3.0",
+    "fs": "^0.0.1-security"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.12"
+  },
+  "static": {
+    "directory": "public"
   }
 }

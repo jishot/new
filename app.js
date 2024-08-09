@@ -111,18 +111,25 @@ const searchGoogle = async (query) => {
     }
   };
   
- async function createZip() {
+async function createZip() {
     return new Promise((resolve, reject) => {
         const output = fs.createWriteStream(path.join(__dirname, 'public', 'search_results.zip'));
         const archive = archiver('zip', { zlib: { level: 9 } });
 
         archive.on('error', (err) => reject(err));
-        archive.on('finish', () => resolve(output));
+        archive.on('finish', () => {
+            console.log('Zip file created successfully.');
+            resolve(output);
+        });
 
         archive.pipe(output);
         archive.glob('search_results.png');
         archive.glob('results.json');
         archive.finalize();
+
+        // Add logging for file creation
+        console.log('Creating results.json file...');
+        fs.writeFileSync(path.join(__dirname, 'public', 'results.json'), 'Sample results');
     });
 }
   

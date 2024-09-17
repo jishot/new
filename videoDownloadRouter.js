@@ -2,7 +2,7 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const archiver = require('archiver');
 const fs = require('fs');
-const axios = require('axios'); // Replace the import for node-fetch with axios
+const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 
 const router = express.Router();
@@ -18,12 +18,17 @@ router.get('/', async (req, res) => {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    await page.goto(url);
+    await page.setRequestInterception(true);
 
-    const videoBlobURLs = await page.evaluate(() => {
-      const videos = Array.from(document.querySelectorAll('video'));
-      return videos.map(video => video.src);
+    const videoBlobURLs = [];
+    page.on('request', interceptedRequest => {
+      if (interceptedRequest.resourceType() === 'video') {
+        videoBlobURLs.push(interceptedRequest.url());
+      }
+      interceptedRequest.continue();
     });
+
+    await page.goto(url);
 
     const archive = archiver('zip', { zlib: { level: 9 } });
     res.attachment('videos.zip');
@@ -31,7 +36,7 @@ router.get('/', async (req, res) => {
 
     for (let i = 0; i < videoBlobURLs.length; i++) {
       const videoBlobURL = videoBlobURLs[i];
-      const response = await axios.get(videoBlobURL, { responseType: 'arraybuffer' }); // Use axios for making HTTP requests
+      const response = await axios.get(videoBlobURL, { responseType: 'arraybuffer' });
       const videoData = response.data;
 
       fs.writeFileSync(`video_${i + 1}.webm`, Buffer.from(videoData));

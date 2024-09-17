@@ -15,38 +15,48 @@ router.get('/', async (req, res) => {
         return res.status(400).send('Missing URL parameter');
     }
 
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+    try {
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
 
-    await page.goto(url);
+        await page.goto(url);
 
-    const htmlContent = await page.content();
-    const $ = cheerio.load(htmlContent);
-    
-    const videoUrls = [];
-    $('video').each((index, element) => {
-        const videoSrc = $(element).attr('src');
-        if (videoSrc) {
-            videoUrls.push(videoSrc);
+        const htmlContent = await page.content();
+        const $ = cheerio.load(htmlContent);
+        
+        const videoUrls = [];
+        $('video').each((index, element) => {
+            const videoSrc = $(element).attr('src');
+            if (videoSrc) {
+                videoUrls.push(videoSrc);
+            }
+        });
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        res.attachment('videos.zip');
+        archive.pipe(res);
+
+        for (let i = 0; i < videoUrls.length; i++) {
+            const videoUrl = videoUrls[i];
+
+            const videoFileName = `video_${i + 1}.mp4`;
+
+            const videoStream = got.stream(videoUrl);
+
+            videoStream.on('error', (err) => {
+                console.error(`Error downloading video: ${err.message}`);
+            });
+
+            archive.append(videoStream, { name: videoFileName });
         }
-    });
 
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    res.attachment('videos.zip');
-    archive.pipe(res);
+        archive.finalize();
 
-    for (let i = 0; i < videoUrls.length; i++) {
-        const videoUrl = videoUrls[i];
-
-        const videoFileName = `video_${i + 1}.mp4`;
-
-        const videoStream = got.stream(videoUrl);
-        archive.append(videoStream, { name: videoFileName });
+        await browser.close();
+    } catch (error) {
+        console.error(`An error occurred: ${error.message}`);
+        res.status(500).send('Internal Server Error');
     }
-
-    archive.finalize();
-
-    await browser.close();
 });
 
 module.exports = router;

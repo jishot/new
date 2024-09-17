@@ -40,6 +40,13 @@ router.get('/', async (req, res) => {
         fs.writeFileSync(tempFilePath, response.data); // Save video data to temporary file
         console.log(`Saved video ${i + 1} to ${tempFilePath}`);
 
+        const expectedVideoSize = response.headers['content-length'];
+        const actualVideoSize = fs.statSync(tempFilePath).size;
+
+        if (expectedVideoSize && expectedVideoSize != actualVideoSize) {
+            console.error(`Video ${i + 1} size mismatch. Expected: ${expectedVideoSize}, Actual: ${actualVideoSize}`);
+        }
+
         archive.file(tempFilePath, { name: videoFileName });
     }
 

@@ -2,7 +2,8 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const archiver = require('archiver');
 const axios = require('axios');
-const { URL } = require('url'); // Import the URL module
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 
@@ -27,10 +28,25 @@ router.get('/', async (req, res) => {
     res.attachment('videos.zip');
     archive.pipe(res);
 
+    const tempDir = path.join(__dirname, 'temp_videos');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir);
+    }
+
     for (const videoUrl of videoUrls) {
-        const absoluteUrl = new URL(videoUrl, url).href; // Convert relative URL to absolute URL
-        const videoResponse = await axios.get(absoluteUrl, { responseType: 'stream' });
-        archive.append(videoResponse.data, { name: `video_${absoluteUrl.split('/').pop()}.mp4` });
+        const videoResponse = await axios.get(videoUrl, { responseType: 'stream' });
+        const videoFileName = `video_${videoUrl.split('/').pop()}.mp4`;
+        const tempFilePath = path.join(tempDir, videoFileName);
+
+        const writer = fs.createWriteStream(tempFilePath);
+        videoResponse.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+        });
+
+        archive.append(fs.createReadStream(tempFilePath), { name: videoFileName });
     }
 
     archive.finalize();

@@ -2,6 +2,8 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const archiver = require('archiver');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const { URL } = require('url'); // Import the URL module
 
 const router = express.Router();
@@ -27,16 +29,18 @@ router.get('/', async (req, res) => {
     res.attachment('videos.zip');
     archive.pipe(res);
 
-    for (const videoUrl of videoUrls) {
+    for (let i = 0; i < videoUrls.length; i++) {
+        const videoUrl = videoUrls[i];
         const absoluteUrl = new URL(videoUrl, url).href; // Convert relative URL to absolute URL
-        const response = await axios({
-            method: 'get',
-            url: absoluteUrl,
-            responseType: 'stream',
-            // Optionally, you can set headers or other configurations here
-        });
+        const response = await axios.get(absoluteUrl, { responseType: 'arraybuffer' });
 
-        archive.append(response.data, { name: `video_${absoluteUrl.split('/').pop()}.mp4` });
+        const videoFileName = `video_${absoluteUrl.split('/').pop()}.mp4`;
+        const tempFilePath = path.join(__dirname, `temp_${i}.mp4`);
+
+        fs.writeFileSync(tempFilePath, response.data); // Save video data to temporary file
+        console.log(`Saved video ${i + 1} to ${tempFilePath}`);
+
+        archive.file(tempFilePath, { name: videoFileName });
     }
 
     archive.finalize();

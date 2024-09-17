@@ -16,8 +16,9 @@ router.get('/', async (req, res) => {
 
   try {
     console.log('Launching Puppeteer...');
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({ timeout: 0 }); // Set timeout to 0 for no timeout
     const page = await browser.newPage();
+    await page.setDefaultNavigationTimeout(60000); // Set navigation timeout to 60 seconds
 
     await page.setRequestInterception(true);
 

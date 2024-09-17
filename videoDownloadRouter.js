@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer');
 const archiver = require('archiver');
 const axios = require('axios');
 const { PassThrough } = require('stream');
-const { URL } = require('url'); // Import the URL module
+const { URL } = require('url');
 
 const router = express.Router();
 
@@ -30,9 +30,10 @@ router.get('/', async (req, res) => {
 
     for (let i = 0; i < videoUrls.length; i++) {
         const videoUrl = videoUrls[i];
-        const absoluteUrl = new URL(videoUrl, url).href; // Convert relative URL to absolute URL
+        const absoluteUrl = new URL(videoUrl, url).href;
 
-        const response = await axios.get(absoluteUrl, { responseType: 'stream' });
+        const response = await axios.get(absoluteUrl, { responseType: 'stream', headers: { Range: 'bytes=0-' } });
+
         const videoFileName = `video_${absoluteUrl.split('/').pop()}.mp4`;
 
         archive.append(response.data, { name: videoFileName });

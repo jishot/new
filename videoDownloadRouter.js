@@ -2,8 +2,7 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const archiver = require('archiver');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const { PassThrough } = require('stream');
 const { URL } = require('url'); // Import the URL module
 
 const router = express.Router();
@@ -32,22 +31,11 @@ router.get('/', async (req, res) => {
     for (let i = 0; i < videoUrls.length; i++) {
         const videoUrl = videoUrls[i];
         const absoluteUrl = new URL(videoUrl, url).href; // Convert relative URL to absolute URL
-        const response = await axios.get(absoluteUrl, { responseType: 'arraybuffer' });
 
+        const response = await axios.get(absoluteUrl, { responseType: 'stream' });
         const videoFileName = `video_${absoluteUrl.split('/').pop()}.mp4`;
-        const tempFilePath = path.join(__dirname, `temp_${i}.mp4`);
 
-        fs.writeFileSync(tempFilePath, response.data); // Save video data to temporary file
-        console.log(`Saved video ${i + 1} to ${tempFilePath}`);
-
-        const expectedVideoSize = response.headers['content-length'];
-        const actualVideoSize = fs.statSync(tempFilePath).size;
-
-        if (expectedVideoSize && expectedVideoSize != actualVideoSize) {
-            console.error(`Video ${i + 1} size mismatch. Expected: ${expectedVideoSize}, Actual: ${actualVideoSize}`);
-        }
-
-        archive.file(tempFilePath, { name: videoFileName });
+        archive.append(response.data, { name: videoFileName });
     }
 
     archive.finalize();

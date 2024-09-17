@@ -34,13 +34,22 @@ router.get('/', async (req, res) => {
     console.log('Navigating to the URL...');
     await page.goto(url);
 
+    // Click on the Download tab to trigger the display of the download link
+    console.log('Clicking on the Download tab...');
+    await page.evaluate(() => {
+      const downloadTab = document.querySelector('li[data-ref="tabDownload"]');
+      if (downloadTab) {
+        downloadTab.click();
+      }
+    });
+
+    // Wait for a brief moment for the download link to appear after clicking
+    await page.waitForTimeout(2000); // 2 seconds (adjust the time as needed)
+
+    // Extract the download link after clicking on the Download tab
     const downloadLink = await page.evaluate(() => {
       const downloadElement = document.querySelector('#tabDownload a');
       if (downloadElement) {
-        const computedStyle = window.getComputedStyle(downloadElement);
-        if (computedStyle && (computedStyle.display === 'none' || computedStyle.visibility === 'hidden')) {
-          downloadElement.style.display = 'block'; // Make the element visible
-        }
         return downloadElement.href;
       }
       return null;
@@ -71,7 +80,7 @@ router.get('/', async (req, res) => {
         }
       });
     } else {
-      console.log('Download link not found on the page');
+      console.log('Download link not found after clicking on the tab');
       res.status(404).send('Download link not found');
     }
 

@@ -2,7 +2,7 @@ const express = require('express');
 const puppeteer = require('puppeteer');
 const archiver = require('archiver');
 const fs = require('fs');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 const ffmpeg = require('fluent-ffmpeg');
 
 const router = express.Router();

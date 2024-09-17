@@ -1,10 +1,9 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
 const archiver = require('archiver');
-const cheerio = require('cheerio');
-const got = require('got');
-const { PassThrough } = require('stream');
-const { URL } = require('url');
+const fs = require('fs');
+const fetch = require('node-fetch');
+const ffmpeg = require('fluent-ffmpeg');
 
 const router = express.Router();
 
@@ -21,36 +20,32 @@ router.get('/', async (req, res) => {
 
         await page.goto(url);
 
-        const htmlContent = await page.content();
-        const $ = cheerio.load(htmlContent);
-        
-        const videoUrls = [];
-        $('video').each((index, element) => {
-            const videoSrc = $(element).attr('src');
-            if (videoSrc) {
-                videoUrls.push(videoSrc);
-            }
+        const videoBlobURLs = await page.evaluate(() => {
+            const videos = Array.from(document.querySelectorAll('video'));
+            return videos.map(video => video.src);
         });
 
         const archive = archiver('zip', { zlib: { level: 9 } });
         res.attachment('videos.zip');
         archive.pipe(res);
 
-        for (let i = 0; i < videoUrls.length; i++) {
-            const videoUrl = videoUrls[i];
+        for (let i = 0; i < videoBlobURLs.length; i++) {
+            const videoBlobURL = videoBlobURLs[i];
+            const response = await fetch(videoBlobURL);
+            const videoData = await response.arrayBuffer();
 
-            const videoFileName = `video_${i + 1}.mp4`;
+            fs.writeFileSync(`video_${i + 1}.webm`, Buffer.from(videoData));
 
-            const videoStream = got.stream(videoUrl);
-
-            videoStream.on('error', (err) => {
-                console.error(`Error downloading video: ${err.message}`);
-            });
-
-            archive.append(videoStream, { name: videoFileName });
+            ffmpeg(`video_${i + 1}.webm`)
+                .output(`video_${i + 1}.mp4`)
+                .on('end', () => {
+                    archive.append(fs.createReadStream(`video_${i + 1}.mp4`), { name: `video_${i + 1}.mp4` });
+                    if (i === videoBlobURLs.length - 1) {
+                        archive.finalize();
+                    }
+                })
+                .run();
         }
-
-        archive.finalize();
 
         await browser.close();
     } catch (error) {

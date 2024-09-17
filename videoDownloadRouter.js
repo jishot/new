@@ -15,6 +15,7 @@ router.get('/', async (req, res) => {
   }
 
   try {
+    console.log('Launching Puppeteer...');
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
@@ -28,6 +29,7 @@ router.get('/', async (req, res) => {
       interceptedRequest.continue();
     });
 
+    console.log('Navigating to the URL...');
     await page.goto(url);
 
     const archive = archiver('zip', { zlib: { level: 9 } });
@@ -36,6 +38,7 @@ router.get('/', async (req, res) => {
 
     for (let i = 0; i < videoBlobURLs.length; i++) {
       const videoBlobURL = videoBlobURLs[i];
+      console.log(`Downloading video ${i + 1}...`);
       const response = await axios.get(videoBlobURL, { responseType: 'arraybuffer' });
       const videoData = response.data;
 
@@ -57,6 +60,7 @@ router.get('/', async (req, res) => {
     }
 
     await browser.close();
+    console.log('Puppeteer closed');
   } catch (error) {
     console.error(`An error occurred: ${error.message}`);
     res.status(500).send('Internal Server Error');

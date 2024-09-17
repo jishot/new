@@ -22,48 +22,36 @@ router.get('/', async (req, res) => {
     await page.setRequestInterception(true);
 
     const videoBlobURLs = [];
-    page.on('request', interceptedRequest => {
-      if (interceptedRequest.resourceType() === 'video') {
-        videoBlobURLs.push(interceptedRequest.url());
+
+    page.on('response', async (response) => {
+      const url = response.url();
+      if (response.request().resourceType() === 'video') {
+        videoBlobURLs.push(url);
       }
-      interceptedRequest.continue();
     });
 
     console.log('Navigating to the URL...');
-    page.on('load', async () => {
-      console.log('Page loaded successfully');
-      
-      const archive = archiver('zip', { zlib: { level: 9 } });
-      res.attachment('videos.zip');
-      archive.pipe(res);
+    await page.goto(url);
 
-      for (let i = 0; i < videoBlobURLs.length; i++) {
-        const videoBlobURL = videoBlobURLs[i];
-        console.log(`Downloading video ${i + 1}...`);
-        const response = await axios.get(videoBlobURL, { responseType: 'arraybuffer' });
-        const videoData = response.data;
-
-        fs.writeFileSync(`video_${i + 1}.webm`, Buffer.from(videoData));
-        
-        console.log(`Video ${i + 1} downloaded successfully`);
-
-        await new Promise((resolve, reject) => {
-          ffmpeg(`video_${i + 1}.webm`)
-            .output(`video_${i + 1}.mp4`)
-            .on('end', () => {
-              archive.append(fs.createReadStream(`video_${i + 1}.mp4`), { name: `video_${i + 1}.mp4` });
-              console.log(`Video ${i + 1} converted successfully`);
-              resolve();
-            })
-            .run();
-        });
-      }
-
-      await browser.close();
-      console.log('Puppeteer closed');
+    const downloadLink = await page.evaluate(() => {
+      const downloadElement = document.querySelector('#tabDownload a');
+      return downloadElement ? downloadElement.href : null;
     });
 
-    await page.goto(url);
+    if (downloadLink) {
+      console.log('Found download link:', downloadLink);
+      
+      const response = await axios.get(downloadLink, { responseType: 'arraybuffer' });
+      const videoData = response.data;
+
+      fs.writeFileSync('video.mp4', Buffer.from(videoData));
+      console.log('Video downloaded successfully');
+    } else {
+      console.log('Download link not found on the page');
+    }
+
+    await browser.close();
+    console.log('Puppeteer closed');
   } catch (error) {
     console.error(`An error occurred: ${error.message}`);
     res.status(500).send('Internal Server Error');

@@ -35,7 +35,14 @@ router.get('/', async (req, res) => {
 
     const downloadLink = await page.evaluate(() => {
       const downloadElement = document.querySelector('#tabDownload a');
-      return downloadElement ? downloadElement.href : null;
+      if (downloadElement) {
+        const computedStyle = window.getComputedStyle(downloadElement);
+        if (computedStyle && (computedStyle.display === 'none' || computedStyle.visibility === 'hidden')) {
+          downloadElement.style.display = 'block'; // Make the element visible
+        }
+        return downloadElement.href;
+      }
+      return null;
     });
 
     if (downloadLink) {
@@ -51,7 +58,17 @@ router.get('/', async (req, res) => {
       res.attachment('downloaded_video.zip');
       archive.pipe(res);
       archive.append(fs.createReadStream('video.mp4'), { name: 'video.mp4' });
-      archive.finalize();
+      
+      archive.finalize(function(err) {
+        if (err) {
+          console.error('Error finalizing archive:', err);
+          res.status(500).send('Internal Server Error');
+        } else {
+          console.log('Archive finalized successfully');
+          fs.unlinkSync('video.mp4'); // Delete the video file after archiving
+          res.end(); // Close the response after archiving is completed
+        }
+      });
     } else {
       console.log('Download link not found on the page');
       res.status(404).send('Download link not found');

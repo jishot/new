@@ -30,36 +30,40 @@ router.get('/', async (req, res) => {
     });
 
     console.log('Navigating to the URL...');
-    await page.goto(url);
-
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    res.attachment('videos.zip');
-    archive.pipe(res);
-
-    for (let i = 0; i < videoBlobURLs.length; i++) {
-      const videoBlobURL = videoBlobURLs[i];
-      console.log(`Downloading video ${i + 1}...`);
-      const response = await axios.get(videoBlobURL, { responseType: 'arraybuffer' });
-      const videoData = response.data;
-
-      fs.writeFileSync(`video_${i + 1}.webm`, Buffer.from(videoData));
+    page.on('load', async () => {
+      console.log('Page loaded successfully');
       
-      console.log(`Video ${i + 1} downloaded successfully`);
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      res.attachment('videos.zip');
+      archive.pipe(res);
 
-      await new Promise((resolve, reject) => {
-        ffmpeg(`video_${i + 1}.webm`)
-          .output(`video_${i + 1}.mp4`)
-          .on('end', () => {
-            archive.append(fs.createReadStream(`video_${i + 1}.mp4`), { name: `video_${i + 1}.mp4` });
-            console.log(`Video ${i + 1} converted successfully`);
-            resolve();
-          })
-          .run();
-      });
-    }
+      for (let i = 0; i < videoBlobURLs.length; i++) {
+        const videoBlobURL = videoBlobURLs[i];
+        console.log(`Downloading video ${i + 1}...`);
+        const response = await axios.get(videoBlobURL, { responseType: 'arraybuffer' });
+        const videoData = response.data;
 
-    await browser.close();
-    console.log('Puppeteer closed');
+        fs.writeFileSync(`video_${i + 1}.webm`, Buffer.from(videoData));
+        
+        console.log(`Video ${i + 1} downloaded successfully`);
+
+        await new Promise((resolve, reject) => {
+          ffmpeg(`video_${i + 1}.webm`)
+            .output(`video_${i + 1}.mp4`)
+            .on('end', () => {
+              archive.append(fs.createReadStream(`video_${i + 1}.mp4`), { name: `video_${i + 1}.mp4` });
+              console.log(`Video ${i + 1} converted successfully`);
+              resolve();
+            })
+            .run();
+        });
+      }
+
+      await browser.close();
+      console.log('Puppeteer closed');
+    });
+
+    await page.goto(url);
   } catch (error) {
     console.error(`An error occurred: ${error.message}`);
     res.status(500).send('Internal Server Error');

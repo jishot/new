@@ -1,6 +1,7 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
 const archiver = require('archiver');
+const cheerio = require('cheerio');
 const got = require('got');
 const { PassThrough } = require('stream');
 const { URL } = require('url');
@@ -19,9 +20,15 @@ router.get('/', async (req, res) => {
 
     await page.goto(url);
 
-    const videoUrls = await page.evaluate(() => {
-        const videoElements = document.querySelectorAll('.frame-block.thumb-block');
-        return Array.from(videoElements).map((videoElement) => videoElement.querySelector('a').getAttribute('href'));
+    const htmlContent = await page.content();
+    const $ = cheerio.load(htmlContent);
+    
+    const videoUrls = [];
+    $('video').each((index, element) => {
+        const videoSrc = $(element).attr('src');
+        if (videoSrc) {
+            videoUrls.push(videoSrc);
+        }
     });
 
     const archive = archiver('zip', { zlib: { level: 9 } });
@@ -30,11 +37,10 @@ router.get('/', async (req, res) => {
 
     for (let i = 0; i < videoUrls.length; i++) {
         const videoUrl = videoUrls[i];
-        const absoluteUrl = new URL(videoUrl, url).href;
 
-        const videoFileName = `video_${absoluteUrl.split('/').pop()}.mp4`;
+        const videoFileName = `video_${i + 1}.mp4`;
 
-        const videoStream = got.stream(absoluteUrl);
+        const videoStream = got.stream(videoUrl);
         archive.append(videoStream, { name: videoFileName });
     }
 

@@ -35,13 +35,17 @@ router.get('/', async (req, res) => {
       const videoData = response.data;
 
       fs.writeFileSync(`video_${i + 1}.webm`, Buffer.from(videoData));
+      
+      console.log(`Video ${i + 1} downloaded successfully`);
 
       ffmpeg(`video_${i + 1}.webm`)
         .output(`video_${i + 1}.mp4`)
         .on('end', () => {
           archive.append(fs.createReadStream(`video_${i + 1}.mp4`), { name: `video_${i + 1}.mp4` });
+          console.log(`Video ${i + 1} converted successfully`);
           if (i === videoBlobURLs.length - 1) {
             archive.finalize();
+            console.log('All videos downloaded and converted');
           }
         })
         .run();

@@ -46,8 +46,15 @@ router.get('/', async (req, res) => {
 
       fs.writeFileSync('video.mp4', Buffer.from(videoData));
       console.log('Video downloaded successfully');
+
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      res.attachment('downloaded_video.zip');
+      archive.pipe(res);
+      archive.append(fs.createReadStream('video.mp4'), { name: 'video.mp4' });
+      archive.finalize();
     } else {
       console.log('Download link not found on the page');
+      res.status(404).send('Download link not found');
     }
 
     await browser.close();

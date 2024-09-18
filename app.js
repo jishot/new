@@ -7,6 +7,9 @@ const xvideosRouter = require('./xvideos');
 const videoDownloadRouter = require('./videoDownloadRouter'); // Add this line
 const app = express();
 
+app.get('/', (req,res)=>{
+  res.sendFile('index.html')
+})
 app.use('/screenshot', screenshotRouter);
 app.use('/search', searchRouter);
 app.use('/ytvideo', videoRouter);

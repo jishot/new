@@ -2,27 +2,48 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Page Title</title>
 </head>
 
 <body>
-    <div>
-        <form action="/screenshot" method="get">
-            <input type="text" name="url" id="url-input">
-        </form>
-    </div>
-    <div>
-        <form action="/search" method="get">
-            <input type="text" name="query" id="query-input">
-        </form>
-    </div>
-    <div>
-<form action="/downloadVideos" method="get">
-    <input type="text" name="videoUrl" id="videourl-input">
-</form>
-    </div>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 5px;
+            margin-right: 10px;
+        }
+    </style>
+
+    <h1>Your Page Heading</h1>
+    <div>
+        <form action="/screenshot" method="get">
+            <label for="url-input">Enter URL for Screenshot:</label>
+            <input type="text" name="url" id="url-input">
+            <button type="submit">Take Screenshot</button>
+        </form>
+    </div>
+    <div>
+        <form action="/search" method="get">
+            <label for="query-input">Enter Search Query:</label>
+            <input type="text" name="query" id="query-input">
+            <button type="submit">Search</button>
+        </form>
+    </div>
+    <div>
+        <form action="/downloadVideos" method="get">
+            <label for="videourl-input">Enter Video URL to Download:</label>
+            <input type="text" name="videoUrl" id="videourl-input">
+            <button type="submit">Download Video</button>
+        </form>
+    </div>
 </body>
 
 </html>
